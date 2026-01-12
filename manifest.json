@@ -1,0 +1,24 @@
+
+{
+  "short_name": "rominvpinto",
+  "name": "rominvpinto Bóveda Premium",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1067/1067256.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1067/1067256.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#2dd4bf",
+  "background_color": "#f8fafc",
+  "orientation": "portrait",
+  "description": "Bóveda privada de contenido exclusivo rominvpinto con protección avanzada."
+}

@@ -1,0 +1,7 @@
+{
+  "name": "rominvpinto",
+  "description": "A secure and elegant platform to showcase premium photos and videos, protected by a simulated PayPal paywall with AI-enhanced descriptions.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
