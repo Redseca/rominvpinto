@@ -7,7 +7,8 @@ import {
   ShieldCheck, Trash2, Settings, 
   ShieldAlert, Package, 
   Home, User as UserIcon, Plus,
-  Edit3, Save, Camera
+  Edit3, Save, Camera, LogOut,
+  Mail, Shield, CreditCard
 } from 'lucide-react';
 
 const ADMIN_CREDENTIALS = {
@@ -30,7 +31,6 @@ const App: React.FC = () => {
   const [authError, setAuthError] = useState('');
   const [profileImage, setProfileImage] = useState(DEFAULT_PROFILE);
   
-  // Estados para nueva carga
   const [tempFile, setTempFile] = useState<string | null>(null);
   const [titleInput, setTitleInput] = useState('');
   const [descInput, setDescInput] = useState('');
@@ -38,7 +38,6 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const profileInputRef = useRef<HTMLInputElement>(null);
 
-  // Estado para edición rápida de precio
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [newPriceValue, setNewPriceValue] = useState('');
 
@@ -66,6 +65,11 @@ const App: React.FC = () => {
   const save = (newItems: MediaItem[]) => {
     setItems(newItems);
     localStorage.setItem('romin_data', JSON.stringify(newItems));
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('romin_session');
+    window.location.reload();
   };
 
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -196,36 +200,98 @@ const App: React.FC = () => {
         </div>
       ) : (
         <div className="pb-32">
-          <header className="px-8 pt-12 pb-6 text-center">
-            <div className="relative inline-block group">
-              <img 
-                src={profileImage} 
-                className="w-32 h-32 rounded-[3rem] mx-auto border-8 border-white shadow-2xl mb-6 object-cover" 
-              />
-              {currentUser?.role === 'admin' && (
-                <>
-                  <button 
-                    onClick={() => profileInputRef.current?.click()}
-                    className="absolute bottom-4 right-0 p-3 bg-teal-500 text-white rounded-2xl shadow-xl hover:scale-110 active:scale-90 transition-all border-4 border-white"
-                  >
-                    <Camera size={18} />
-                  </button>
-                  <input 
-                    ref={profileInputRef}
-                    type="file"
-                    className="hidden"
-                    onChange={handleProfileChange}
-                    accept="image/*"
-                  />
-                </>
-              )}
-            </div>
-            <h2 className="text-3xl font-black tracking-tighter">@rominvpinto</h2>
-            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2">Contenido Privado Verificado</p>
-          </header>
+          {viewMode !== ViewMode.PROFILE && (
+            <header className="px-8 pt-12 pb-6 text-center">
+              <div className="relative inline-block group">
+                <img 
+                  src={profileImage} 
+                  className="w-32 h-32 rounded-[3rem] mx-auto border-8 border-white shadow-2xl mb-6 object-cover" 
+                />
+                {currentUser?.role === 'admin' && (
+                  <>
+                    <button 
+                      onClick={() => profileInputRef.current?.click()}
+                      className="absolute bottom-4 right-0 p-3 bg-teal-500 text-white rounded-2xl shadow-xl hover:scale-110 active:scale-90 transition-all border-4 border-white"
+                    >
+                      <Camera size={18} />
+                    </button>
+                    <input 
+                      ref={profileInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={handleProfileChange}
+                      accept="image/*"
+                    />
+                  </>
+                )}
+              </div>
+              <h2 className="text-3xl font-black tracking-tighter">@rominvpinto</h2>
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2">Contenido Privado Verificado</p>
+            </header>
+          )}
 
           <main className="px-6 max-w-lg mx-auto">
-            {viewMode === ViewMode.UPLOAD ? (
+            {viewMode === ViewMode.PROFILE ? (
+              <div className="pt-16 animate-in slide-in-from-bottom-6 duration-500">
+                <div className="bg-white rounded-[3.5rem] p-10 shadow-2xl border-b-8 border-teal-400 overflow-hidden relative">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-teal-50 rounded-full -mr-16 -mt-16 z-0" />
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-6 mb-12">
+                      <img src={profileImage} className="w-24 h-24 rounded-3xl object-cover shadow-xl border-4 border-white" />
+                      <div>
+                        <h3 className="text-2xl font-black tracking-tighter text-slate-900">{currentUser?.name}</h3>
+                        <p className="text-teal-500 font-black text-[10px] uppercase tracking-widest">{currentUser?.role === 'admin' ? 'Administrador Maestro' : 'Miembro VIP Gold'}</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl">
+                        <Mail className="text-slate-400" size={20} />
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email de Acceso</p>
+                          <p className="font-bold text-slate-700 text-sm">{currentUser?.email}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl">
+                        <CreditCard className="text-slate-400" size={20} />
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contenido Desbloqueado</p>
+                          <p className="font-bold text-slate-700 text-sm">{currentUser?.purchasedIds.length || 0} Artículos</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl">
+                        <Shield className="text-slate-400" size={20} />
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado de Cuenta</p>
+                          <p className="font-bold text-teal-600 text-sm">Protegida y Verificada</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {currentUser?.role === 'user' && (
+                      <button 
+                        onClick={handleLogout}
+                        className="w-full mt-12 py-5 bg-red-50 text-red-500 font-black rounded-3xl flex items-center justify-center gap-3 uppercase text-[10px] tracking-widest border-2 border-red-100 hover:bg-red-100 transition-colors"
+                      >
+                        <LogOut size={18} />
+                        Cerrar Sesión de Usuario
+                      </button>
+                    )}
+
+                    {currentUser?.role === 'admin' && (
+                      <div className="mt-12 p-6 bg-teal-50 rounded-3xl border border-teal-100">
+                        <p className="text-[10px] font-black text-teal-600 uppercase tracking-[0.2em] text-center italic">
+                          Panel de Control Activo
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : viewMode === ViewMode.UPLOAD ? (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
                 <div className="text-center mb-8">
                   <h3 className="text-xl font-black uppercase tracking-widest">Publicar Contenido</h3>
@@ -387,7 +453,7 @@ const App: React.FC = () => {
               <Settings size={28} strokeWidth={3} />
             </button>
           )}
-          <button onClick={() => { localStorage.removeItem('romin_session'); window.location.reload(); }} className="p-4 text-slate-300">
+          <button onClick={() => setViewMode(ViewMode.PROFILE)} className={`p-4 rounded-2xl ${viewMode === ViewMode.PROFILE ? 'text-teal-600 bg-teal-50 scale-110' : 'text-slate-300'}`}>
             <UserIcon size={28} strokeWidth={3} />
           </button>
         </nav>

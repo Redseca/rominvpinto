@@ -22,5 +22,6 @@ export enum ViewMode {
   GALLERY = 'GALLERY',
   MY_CONTENT = 'MY_CONTENT',
   UPLOAD = 'UPLOAD',
-  AUTH = 'AUTH'
+  AUTH = 'AUTH',
+  PROFILE = 'PROFILE'
 }
