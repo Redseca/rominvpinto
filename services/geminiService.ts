@@ -2,33 +2,27 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 /**
- * Genera textos de marketing premium basados en un concepto de texto.
- * Valida la existencia de la API_KEY antes de proceder.
+ * Genera textos de marketing premium utilizando el modelo Gemini.
+ * Sigue estrictamente el formato de inicialización: new GoogleGenAI({ apiKey: process.env.API_KEY })
  */
 export const generatePremiumCopy = async (concept: string) => {
   const apiKey = process.env.API_KEY;
 
-  if (!apiKey || apiKey === "undefined" || apiKey === "") {
+  if (!apiKey) {
     throw new Error("API_KEY_MISSING");
   }
 
+  // Inicialización correcta según directrices
   const ai = new GoogleGenAI({ apiKey });
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: {
-        parts: [
-          {
-            text: `Eres un curador de contenido premium y exclusivo. Basado en el siguiente concepto o tema: "${concept}", proporciona un título atractivo y una breve descripción teaser (máximo 12 palabras) que sea sugerente y elegante para incitar a los usuarios a pagar por el contenido. 
-            REGLAS:
-            1. ESCRIBE TODO EN ESPAÑOL.
-            2. No menciones que está bloqueado.
-            3. Sé sofisticado y profesional.
-            4. Devuelve el resultado exclusivamente en formato JSON.`
-          }
-        ]
-      },
+      contents: [{
+        parts: [{
+          text: `Genera un título y una descripción teaser (max 12 palabras) para este concepto: "${concept}". Formato JSON con campos "title" y "teaser".`
+        }]
+      }],
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -42,16 +36,13 @@ export const generatePremiumCopy = async (concept: string) => {
       }
     });
 
-    return JSON.parse(response.text);
+    return JSON.parse(response.text || "{}");
   } catch (error) {
-    console.error("Error calling Gemini:", error);
-    throw new Error("AI_CALL_FAILED");
+    console.error("Gemini Error:", error);
+    return { title: concept, teaser: "Contenido exclusivo disponible." };
   }
 };
 
-/**
- * Verifica si la clave está presente en el entorno.
- */
 export const isAiConfigured = () => {
-  return !!process.env.API_KEY && process.env.API_KEY !== "undefined";
+  return !!process.env.API_KEY;
 };
