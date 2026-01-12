@@ -1,7 +1,7 @@
 
 {
   "short_name": "rominvpinto",
-  "name": "rominvpinto Bóveda Premium",
+  "name": "rominvpinto Bóveda Pro",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/1067/1067256.png",
@@ -17,8 +17,7 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#2dd4bf",
+  "theme_color": "#14b8a6",
   "background_color": "#f8fafc",
-  "orientation": "portrait",
-  "description": "Bóveda privada de contenido exclusivo rominvpinto con protección avanzada."
+  "orientation": "portrait"
 }

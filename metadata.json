@@ -1,6 +1,6 @@
 {
-  "name": "rominvpinto",
-  "description": "A secure and elegant platform to showcase premium photos and videos, protected by a simulated PayPal paywall with AI-enhanced descriptions.",
+  "name": "rominvpinto Bóveda Pro",
+  "description": "Plataforma premium para almacenamiento y venta de contenido exclusivo mediante PayPal.",
   "requestFramePermissions": [
     "camera"
   ]

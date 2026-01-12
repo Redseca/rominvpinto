@@ -16,7 +16,6 @@ export interface MediaItem {
   title: string;
   description: string;
   price: number;
-  thumbnailUrl?: string;
 }
 
 export enum ViewMode {
