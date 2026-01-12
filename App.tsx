@@ -7,13 +7,15 @@ import {
   ShieldCheck, Trash2, Settings, 
   ShieldAlert, Package, 
   Home, User as UserIcon, Plus,
-  Edit3, Save
+  Edit3, Save, Camera
 } from 'lucide-react';
 
 const ADMIN_CREDENTIALS = {
   EMAIL: '183327A3@',
   PASS: 'redsecamising'
 };
+
+const DEFAULT_PROFILE = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop";
 
 const App: React.FC = () => {
   const [items, setItems] = useState<MediaItem[]>([]);
@@ -26,6 +28,7 @@ const App: React.FC = () => {
   const [isSecured, setIsSecured] = useState(false);
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [authError, setAuthError] = useState('');
+  const [profileImage, setProfileImage] = useState(DEFAULT_PROFILE);
   
   // Estados para nueva carga
   const [tempFile, setTempFile] = useState<string | null>(null);
@@ -33,6 +36,7 @@ const App: React.FC = () => {
   const [descInput, setDescInput] = useState('');
   const [priceInput, setPriceInput] = useState('5.00');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const profileInputRef = useRef<HTMLInputElement>(null);
 
   // Estado para edición rápida de precio
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
@@ -45,6 +49,9 @@ const App: React.FC = () => {
     
     const saved = localStorage.getItem('romin_data');
     if (saved) setItems(JSON.parse(saved));
+
+    const savedProfile = localStorage.getItem('romin_profile_img');
+    if (savedProfile) setProfileImage(savedProfile);
 
     const session = localStorage.getItem('romin_session');
     if (session) {
@@ -59,6 +66,18 @@ const App: React.FC = () => {
   const save = (newItems: MediaItem[]) => {
     setItems(newItems);
     localStorage.setItem('romin_data', JSON.stringify(newItems));
+  };
+
+  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const url = ev.target?.result as string;
+      setProfileImage(url);
+      localStorage.setItem('romin_profile_img', url);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleAuth = (e: React.FormEvent) => {
@@ -178,7 +197,29 @@ const App: React.FC = () => {
       ) : (
         <div className="pb-32">
           <header className="px-8 pt-12 pb-6 text-center">
-            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop" className="w-32 h-32 rounded-[3rem] mx-auto border-8 border-white shadow-2xl mb-6" />
+            <div className="relative inline-block group">
+              <img 
+                src={profileImage} 
+                className="w-32 h-32 rounded-[3rem] mx-auto border-8 border-white shadow-2xl mb-6 object-cover" 
+              />
+              {currentUser?.role === 'admin' && (
+                <>
+                  <button 
+                    onClick={() => profileInputRef.current?.click()}
+                    className="absolute bottom-4 right-0 p-3 bg-teal-500 text-white rounded-2xl shadow-xl hover:scale-110 active:scale-90 transition-all border-4 border-white"
+                  >
+                    <Camera size={18} />
+                  </button>
+                  <input 
+                    ref={profileInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={handleProfileChange}
+                    accept="image/*"
+                  />
+                </>
+              )}
+            </div>
             <h2 className="text-3xl font-black tracking-tighter">@rominvpinto</h2>
             <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2">Contenido Privado Verificado</p>
           </header>
