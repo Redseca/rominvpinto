@@ -8,7 +8,7 @@ import {
   ShieldAlert, Package, 
   Home, User as UserIcon, Plus,
   Edit3, Save, Camera, LogOut,
-  Mail, Shield, CreditCard
+  Mail, Shield, CreditCard, RefreshCw
 } from 'lucide-react';
 
 const ADMIN_CREDENTIALS = {
@@ -17,6 +17,49 @@ const ADMIN_CREDENTIALS = {
 };
 
 const DEFAULT_PROFILE = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop";
+
+// --- MOTOR DE BASE DE DATOS INDEXEDDB ---
+const DB_NAME = 'RominVaultDB';
+const STORE_NAME = 'media_content';
+
+const initDB = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+};
+
+const getAllItems = async (): Promise<MediaItem[]> => {
+  const db = await initDB();
+  return new Promise((resolve) => {
+    const transaction = db.transaction(STORE_NAME, 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result);
+  });
+};
+
+const saveItem = async (item: MediaItem) => {
+  const db = await initDB();
+  const transaction = db.transaction(STORE_NAME, 'readwrite');
+  const store = transaction.objectStore(STORE_NAME);
+  store.put(item);
+};
+
+const deleteItem = async (id: string) => {
+  const db = await initDB();
+  const transaction = db.transaction(STORE_NAME, 'readwrite');
+  const store = transaction.objectStore(STORE_NAME);
+  store.delete(id);
+};
+// ---------------------------------------
 
 const App: React.FC = () => {
   const [items, setItems] = useState<MediaItem[]>([]);
@@ -41,31 +84,36 @@ const App: React.FC = () => {
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [newPriceValue, setNewPriceValue] = useState('');
 
+  // Carga inicial de datos
   useEffect(() => {
+    const loadData = async () => {
+      try {
+        const storedItems = await getAllItems();
+        setItems(storedItems.sort((a, b) => b.id.localeCompare(a.id)));
+      } catch (e) {
+        console.error("Error cargando IndexedDB", e);
+      }
+
+      const savedProfile = localStorage.getItem('romin_profile_img');
+      if (savedProfile) setProfileImage(savedProfile);
+
+      const session = localStorage.getItem('romin_session');
+      if (session) {
+        setCurrentUser(JSON.parse(session));
+        setViewMode(ViewMode.GALLERY);
+      }
+
+      setTimeout(() => setIsAppLoading(false), 1200);
+    };
+
+    loadData();
+
     const handleVisibility = () => setIsSecured(document.visibilityState === 'hidden');
     window.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('contextmenu', (e) => e.preventDefault());
     
-    const saved = localStorage.getItem('romin_data');
-    if (saved) setItems(JSON.parse(saved));
-
-    const savedProfile = localStorage.getItem('romin_profile_img');
-    if (savedProfile) setProfileImage(savedProfile);
-
-    const session = localStorage.getItem('romin_session');
-    if (session) {
-      setCurrentUser(JSON.parse(session));
-      setViewMode(ViewMode.GALLERY);
-    }
-
-    setTimeout(() => setIsAppLoading(false), 1500);
     return () => window.removeEventListener('visibilitychange', handleVisibility);
   }, []);
-
-  const save = (newItems: MediaItem[]) => {
-    setItems(newItems);
-    localStorage.setItem('romin_data', JSON.stringify(newItems));
-  };
 
   const handleLogout = () => {
     localStorage.removeItem('romin_session');
@@ -129,18 +177,22 @@ const App: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!tempFile || !titleInput) return;
     setIsUploading(true);
     const newItem: MediaItem = {
-      id: 'm-'+Date.now(),
+      id: 'm-' + Date.now(),
       type: 'image',
       url: tempFile,
       title: titleInput,
       description: descInput || 'Contenido Premium',
       price: parseFloat(priceInput) || 5.00
     };
-    save([newItem, ...items]);
+    
+    await saveItem(newItem);
+    const updatedItems = [newItem, ...items];
+    setItems(updatedItems);
+    
     setTempFile(null);
     setTitleInput('');
     setDescInput('');
@@ -149,11 +201,21 @@ const App: React.FC = () => {
     setViewMode(ViewMode.GALLERY);
   };
 
-  const updateItemPrice = (id: string) => {
+  const handleRemoveItem = async (id: string) => {
+    await deleteItem(id);
+    setItems(items.filter(i => i.id !== id));
+  };
+
+  const updateItemPrice = async (id: string) => {
     const priceNum = parseFloat(newPriceValue);
     if (isNaN(priceNum)) return;
-    const updatedItems = items.map(item => item.id === id ? { ...item, price: priceNum } : item);
-    save(updatedItems);
+    
+    const item = items.find(i => i.id === id);
+    if (item) {
+      const updated = { ...item, price: priceNum };
+      await saveItem(updated);
+      setItems(items.map(i => i.id === id ? updated : i));
+    }
     setEditingPriceId(null);
   };
 
@@ -282,9 +344,12 @@ const App: React.FC = () => {
                     )}
 
                     {currentUser?.role === 'admin' && (
-                      <div className="mt-12 p-6 bg-teal-50 rounded-3xl border border-teal-100">
+                      <div className="mt-12 p-6 bg-teal-50 rounded-3xl border border-teal-100 space-y-2">
                         <p className="text-[10px] font-black text-teal-600 uppercase tracking-[0.2em] text-center italic">
                           Panel de Control Activo
+                        </p>
+                        <p className="text-[9px] text-slate-400 text-center font-bold">
+                          Almacenamiento: {items.length} items guardados en este dispositivo.
                         </p>
                       </div>
                     )}
@@ -353,7 +418,10 @@ const App: React.FC = () => {
                 )}
                 
                 <div className="pt-10 space-y-4">
-                  <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest px-4">Inventario Actual</h4>
+                  <div className="flex justify-between items-center px-4">
+                    <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Inventario Actual</h4>
+                    <button onClick={async () => setItems(await getAllItems())} className="text-slate-300"><RefreshCw size={14}/></button>
+                  </div>
                   {items.map(item => (
                     <div key={item.id} className="bg-white p-4 rounded-3xl flex items-center justify-between shadow-sm">
                       <div className="flex items-center gap-4 flex-1">
@@ -382,7 +450,7 @@ const App: React.FC = () => {
                           )}
                         </div>
                       </div>
-                      <button onClick={() => save(items.filter(i => i.id !== item.id))} className="p-3 text-red-200 hover:text-red-500 shrink-0"><Trash2 size={20}/></button>
+                      <button onClick={() => handleRemoveItem(item.id)} className="p-3 text-red-200 hover:text-red-500 shrink-0"><Trash2 size={20}/></button>
                     </div>
                   ))}
                 </div>
@@ -431,7 +499,7 @@ const App: React.FC = () => {
                 {items.length === 0 && (
                   <div className="text-center py-24 opacity-20">
                     <Package size={64} className="mx-auto mb-4" />
-                    <p className="font-black uppercase tracking-widest text-xs">Sin contenido disponible</p>
+                    <p className="font-black uppercase tracking-widest text-xs">Bóveda vacía temporalmente</p>
                   </div>
                 )}
               </div>
